@@ -1,0 +1,67 @@
+---
+- name: Check hostname variable
+  ansible.builtin.assert:
+    that:
+      - asterisk_hostname is defined
+      - asterisk_hostname | length > 0
+    fail_msg: "asterisk_hostname is not defined for this host"
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ asterisk_hostname }}"
+
+- name: Install base packages on Debian/Ubuntu
+  ansible.builtin.apt:
+    name:
+      - vim
+      - nano
+      - git
+      - htop
+      - tcpdump
+      - net-tools
+      - dnsutils
+      - lsof
+      - unzip
+      - wget
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+
+- name: Install EPEL repository on Rocky/RHEL family
+  ansible.builtin.dnf:
+    name:
+      - epel-release
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Install base packages on Rocky/RHEL family
+  ansible.builtin.dnf:
+    name:
+      - vim
+      - nano
+      - git
+      - htop
+      - tcpdump
+      - net-tools
+      - bind-utils
+      - lsof
+      - unzip
+      - wget
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure SSH service is enabled and started on Debian/Ubuntu
+  ansible.builtin.systemd:
+    name: ssh
+    enabled: true
+    state: started
+  when: ansible_os_family == "Debian"
+
+- name: Ensure SSH service is enabled and started on Rocky/RHEL family
+  ansible.builtin.systemd:
+    name: sshd
+    enabled: true
+    state: started
+  when: ansible_os_family == "RedHat"

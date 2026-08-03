@@ -1,0 +1,24 @@
+# Real local Ansible inventory
+inventories/lab/hosts.yml
+inventories/*/hosts.yml
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.local.conf
+.vault_pass
+
+# Asterisk secrets
+captured/**/pjsip_trunk.local.conf
+captured/**/*.secret
+
+logs/
+*.retry
+
+group_vars/all.yml

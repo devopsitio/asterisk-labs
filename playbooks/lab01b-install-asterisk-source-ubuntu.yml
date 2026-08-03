@@ -1,0 +1,8 @@
+---
+- name: Lab 01b - 1.2.3 - install Asterisk from source on Ubuntu
+  hosts: asterisk_lab_ubuntu_24
+  become: true
+  gather_facts: true
+
+  roles:
+    - asterisk_source_ubuntu

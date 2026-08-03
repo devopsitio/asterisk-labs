@@ -1,0 +1,82 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade system packages
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Install build dependencies for Asterisk source build
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - linux-headers-generic
+      - openssh-server
+      - apache2
+      - bison
+      - flex
+      - php
+      - php-curl
+      - php-cli
+      - php-mysql
+      - php-pear
+      - php-gd
+      - curl
+      - sox
+      - libncurses5-dev
+      - libssl-dev
+      - mpg123
+      - libxml2-dev
+      - libnewt-dev
+      - sqlite3
+      - libsqlite3-dev
+      - pkg-config
+      - automake
+      - libtool
+      - autoconf
+      - git
+      - unixodbc-dev
+      - uuid
+      - uuid-dev
+      - libasound2-dev
+      - libogg-dev
+      - libvorbis-dev
+      - libcurl4-openssl-dev
+      - libical-dev
+      - libneon27-dev
+      - libspandsp-dev
+      - sudo
+      - subversion
+      - wget
+      - tar
+    state: present
+
+## install_prereq 
+- name: Install build dependencies for Asterisk source build from install_prereq
+  ansible.builtin.apt:
+    name:
+      - file
+      - patch
+      - ca-certificates
+      - libedit-dev
+      - libjansson-dev
+      - libsrtp2-dev
+      - liburiparser-dev
+      - libxslt1-dev
+      - libspeex-dev
+      - libspeexdsp-dev
+      - libopus-dev
+    state: present
+
+- name: Ensure source directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ asterisk_src_base }}"
+    - "{{ asterisk_build_base }}"

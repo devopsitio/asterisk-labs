@@ -1,0 +1,27 @@
+---
+asterisk_version: "22.5.2"
+
+asterisk_src_base: "/usr/local/src"
+asterisk_build_base: "/usr/src"
+
+asterisk_download_base_url: "https://downloads.asterisk.org/pub/telephony/asterisk/old-releases"
+asterisk_tarball_url: "{{ asterisk_download_base_url }}/asterisk-{{ asterisk_version }}.tar.gz"
+asterisk_tarball_path: "{{ asterisk_build_base }}/asterisk-{{ asterisk_version }}.tar.gz"
+asterisk_source_dir: "{{ asterisk_build_base }}/asterisk-{{ asterisk_version }}"
+
+libpri_tarball_url: "https://downloads.asterisk.org/pub/telephony/libpri/libpri-1-current.tar.gz"
+libpri_tarball_path: "{{ asterisk_build_base }}/libpri-1-current.tar.gz"
+
+dahdi_linux_repo: "https://github.com/asterisk/dahdi-linux"
+dahdi_linux_dir: "{{ asterisk_src_base }}/dahdi-linux"
+
+dahdi_tools_repo: "https://github.com/asterisk/dahdi-tools"
+dahdi_tools_dir: "{{ asterisk_src_base }}/dahdi-tools"
+
+dahdi_linux_version: "master"
+dahdi_tools_version: "master"
+
+asterisk_user: "asterisk"
+asterisk_group: "asterisk"
+
+asterisk_make_jobs: 4

@@ -1,0 +1,118 @@
+---
+- name: Ensure asterisk group exists
+  ansible.builtin.group:
+    name: "{{ asterisk_group }}"
+    state: present
+
+- name: Ensure asterisk user exists
+  ansible.builtin.user:
+    name: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    home: "/home/{{ asterisk_user }}"
+    create_home: true
+    shell: /usr/sbin/nologin
+    state: present
+
+- name: Configure AST_USER in /etc/default/asterisk
+  ansible.builtin.lineinfile:
+    path: /etc/default/asterisk
+    regexp: '^#?AST_USER='
+    line: 'AST_USER="{{ asterisk_user }}"'
+    create: false
+
+- name: Configure AST_GROUP in /etc/default/asterisk
+  ansible.builtin.lineinfile:
+    path: /etc/default/asterisk
+    regexp: '^#?AST_GROUP='
+    line: 'AST_GROUP="{{ asterisk_group }}"'
+    create: false
+
+- name: Ensure Asterisk runtime directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    mode: "0750"
+  loop:
+    - /var/lib/asterisk
+    - /var/log/asterisk
+    - /var/run/asterisk
+    - /var/spool/asterisk
+    - /etc/asterisk
+
+- name: Set ownership for Asterisk directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    recurse: true
+  loop:
+    - /var/lib/asterisk
+    - /var/log/asterisk
+    - /var/run/asterisk
+    - /var/spool/asterisk
+    - /etc/asterisk
+
+- name: Set permissions for Asterisk directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "u=rwX,g=rX,o="
+    recurse: true
+  loop:
+    - /var/lib/asterisk
+    - /var/log/asterisk
+    - /var/run/asterisk
+    - /var/spool/asterisk
+    - /etc/asterisk
+
+- name: Check if /usr/lib/asterisk exists
+  ansible.builtin.stat:
+    path: /usr/lib/asterisk
+  register: usr_lib_asterisk
+
+- name: Set ownership for /usr/lib/asterisk
+  ansible.builtin.file:
+    path: /usr/lib/asterisk
+    state: directory
+    owner: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    recurse: true
+  when: usr_lib_asterisk.stat.exists
+
+- name: Set permissions for /usr/lib/asterisk
+  ansible.builtin.file:
+    path: /usr/lib/asterisk
+    state: directory
+    mode: "u=rwX,g=rX,o="
+    recurse: true
+  when: usr_lib_asterisk.stat.exists
+
+- name: Check if /dev/dahdi exists
+  ansible.builtin.stat:
+    path: /dev/dahdi
+  register: dev_dahdi
+
+- name: Set ownership for /dev/dahdi
+  ansible.builtin.file:
+    path: /dev/dahdi
+    state: directory
+    owner: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    recurse: true
+  when: dev_dahdi.stat.exists
+
+- name: Set permissions for /dev/dahdi
+  ansible.builtin.file:
+    path: /dev/dahdi
+    state: directory
+    mode: "u=rwX,g=rX,o="
+    recurse: true
+  when: dev_dahdi.stat.exists
+
+- name: Restart Asterisk
+  ansible.builtin.service:
+    name: asterisk
+    state: restarted

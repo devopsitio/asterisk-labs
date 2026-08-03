@@ -1,0 +1,85 @@
+---
+- name: Clone DAHDI Linux source
+  ansible.builtin.git:
+    repo: "{{ dahdi_linux_repo }}"
+    dest: "{{ dahdi_linux_dir }}"
+    version: "{{ dahdi_linux_version }}"
+    update: false
+
+- name: Patch DAHDI xbus-sysfs.c for Ubuntu 24 kernel compatibility
+  ansible.builtin.replace:
+    path: "{{ dahdi_linux_dir }}/drivers/dahdi/xpp/xbus-sysfs.c"
+    regexp: '#if LINUX_VERSION_CODE >= KERNEL_VERSION\(6, 11, 0\) \|\|\(defined\(RHEL_RELEASE_CODE\) && \(RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION\(9, 8\)\)\)'
+    replace: '#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)'
+
+- name: Patch DAHDI dahdi-sysfs.c for Ubuntu 24 kernel compatibility
+  ansible.builtin.replace:
+    path: "{{ dahdi_linux_dir }}/drivers/dahdi/dahdi-sysfs.c"
+    regexp: '#if LINUX_VERSION_CODE >= KERNEL_VERSION\(6, 11, 0\) \|\|\(defined\(RHEL_RELEASE_CODE\) && \(RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION\(9, 8\)\)\)'
+    replace: '#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)'
+
+- name: Patch DAHDI dahdi-sysfs-chan.c for Ubuntu 24 kernel compatibility
+  ansible.builtin.replace:
+    path: "{{ dahdi_linux_dir }}/drivers/dahdi/dahdi-sysfs-chan.c"
+    regexp: '#if LINUX_VERSION_CODE >= KERNEL_VERSION\(6, 11, 0\) \|\|\(defined\(RHEL_RELEASE_CODE\) && \(RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION\(9, 8\)\)\)'
+    replace: '#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)'
+
+- name: Build DAHDI Linux
+  ansible.builtin.command:
+    cmd: "make -j{{ asterisk_make_jobs }}"
+    chdir: "{{ dahdi_linux_dir }}"
+  changed_when: true
+
+- name: Install DAHDI Linux
+  ansible.builtin.command:
+    cmd: make install
+    chdir: "{{ dahdi_linux_dir }}"
+  changed_when: true
+
+- name: Clone DAHDI tools source
+  ansible.builtin.git:
+    repo: "{{ dahdi_tools_repo }}"
+    dest: "{{ dahdi_tools_dir }}"
+    version: "{{ dahdi_tools_version }}"
+    update: false
+
+- name: Run autoreconf for DAHDI tools
+  ansible.builtin.command:
+    cmd: autoreconf -i
+    chdir: "{{ dahdi_tools_dir }}"
+    creates: "{{ dahdi_tools_dir }}/configure"
+
+- name: Configure DAHDI tools
+  ansible.builtin.command:
+    cmd: ./configure
+    chdir: "{{ dahdi_tools_dir }}"
+    creates: "{{ dahdi_tools_dir }}/Makefile"
+
+- name: Build DAHDI tools
+  ansible.builtin.command:
+    cmd: "make -j{{ asterisk_make_jobs }}"
+    chdir: "{{ dahdi_tools_dir }}"
+  changed_when: true
+
+- name: Install DAHDI tools config
+  ansible.builtin.command:
+    cmd: make install-config
+    chdir: "{{ dahdi_tools_dir }}"
+  changed_when: true
+
+- name: Install DAHDI tools
+  ansible.builtin.command:
+    cmd: make install
+    chdir: "{{ dahdi_tools_dir }}"
+  changed_when: true
+
+ ## - name: Load dahdi kernel module
+ ##   community.general.modprobe:
+ ##     name: dahdi
+ ##     state: present
+ ## # ansible-galaxy collection install community.general
+
+- name: Load dahdi kernel module
+  ansible.builtin.command:
+    cmd: modprobe dahdi
+  changed_when: false

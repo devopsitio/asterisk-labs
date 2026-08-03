@@ -1,0 +1,15 @@
+---
+- name: Install build packages
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Build and install DAHDI
+  ansible.builtin.import_tasks: dahdi.yml
+
+- name: Build and install LibPRI
+  ansible.builtin.import_tasks: libpri.yml
+
+- name: Build and install Asterisk
+  ansible.builtin.import_tasks: asterisk.yml
+
+- name: Configure users and permissions
+  ansible.builtin.import_tasks: permissions.yml

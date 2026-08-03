@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p logs
+
+timestamp="$(date +%Y%m%d-%H%M%S)"
+started_at="$(date '+%Y-%m-%d %H:%M:%S %z')"
+
+git_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo no-git)"
+git_branch_safe="$(printf '%s' "$git_branch" | tr '/ :' '---')"
+
+git_commit="$(git rev-parse --short HEAD 2>/dev/null || echo no-git)"
+git_status="$(git status --short 2>/dev/null || true)"
+
+log_file="logs/${timestamp}_ansible_${git_branch_safe}_${git_commit}.log"
+
+cmd=(ansible "$@")
+
+{
+  echo "============================================================"
+  echo "Ansible ad-hoc run"
+  echo "============================================================"
+  echo "Started at: $started_at"
+  echo "Working dir: $(pwd)"
+  echo "Log file: $log_file"
+  echo "Git branch: $git_branch"
+  echo "Git commit: $git_commit"
+  echo "Command: ${cmd[*]}"
+  echo
+  echo "Git status:"
+  if [ -n "$git_status" ]; then
+    echo "$git_status"
+  else
+    echo "clean"
+  fi
+  echo
+  echo "============================================================"
+  echo
+} > "$log_file"
+
+echo "Log: $log_file"
+echo "Git branch: $git_branch"
+echo "Git commit: $git_commit"
+echo
+
+set +e
+ANSIBLE_LOG_PATH="$log_file" "${cmd[@]}"
+rc=$?
+set -e
+
+finished_at="$(date '+%Y-%m-%d %H:%M:%S %z')"
+
+{
+  echo
+  echo "============================================================"
+  echo "Finished at: $finished_at"
+  echo "Exit code: $rc"
+  echo "============================================================"
+} >> "$log_file"
+
+exit "$rc"

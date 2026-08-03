@@ -1,0 +1,8 @@
+---
+- name: Lab 00 - base preparation
+  hosts: asterisk
+  become: true
+
+  roles:
+    - common
+

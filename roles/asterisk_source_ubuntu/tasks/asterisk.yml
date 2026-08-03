@@ -1,0 +1,84 @@
+---
+- name: Download Asterisk source tarball
+  ansible.builtin.get_url:
+    url: "{{ asterisk_tarball_url }}"
+    dest: "{{ asterisk_tarball_path }}"
+    mode: "0644"
+
+- name: Extract Asterisk source
+  ansible.builtin.unarchive:
+    src: "{{ asterisk_tarball_path }}"
+    dest: "{{ asterisk_build_base }}"
+    remote_src: true
+    creates: "{{ asterisk_source_dir }}/configure"
+
+- name: Download MP3 source for Asterisk
+  ansible.builtin.command:
+    cmd: contrib/scripts/get_mp3_source.sh
+    chdir: "{{ asterisk_source_dir }}"
+    creates: "{{ asterisk_source_dir }}/addons/mp3"
+
+#- name: Install Asterisk prereq packages
+#  ansible.builtin.command:
+#    cmd: contrib/scripts/install_prereq install
+#    chdir: "{{ asterisk_source_dir }}"
+#  changed_when: true
+
+- name: Configure Asterisk build
+  ansible.builtin.command:
+    cmd: ./configure --with-jansson-bundled --with-pjproject-bundled
+    chdir: "{{ asterisk_source_dir }}"
+    creates: "{{ asterisk_source_dir }}/makeopts"
+
+# make menuselect is interactive.
+# For automation we build with default menuselect options.
+# If you need custom modules, save menuselect.makeopts and copy it before make.
+- name: Build Asterisk
+  ansible.builtin.command:
+    cmd: "make -j{{ asterisk_make_jobs }}"
+    chdir: "{{ asterisk_source_dir }}"
+  changed_when: true
+
+- name: Install Asterisk
+  ansible.builtin.command:
+    cmd: make install
+    chdir: "{{ asterisk_source_dir }}"
+    creates: /usr/sbin/asterisk
+
+- name: Install Asterisk sample configs
+  ansible.builtin.command:
+    cmd: make samples
+    chdir: "{{ asterisk_source_dir }}"
+    creates: /etc/asterisk/asterisk.conf
+
+- name: Install Asterisk systemd service
+  ansible.builtin.command:
+    cmd: make config
+    chdir: "{{ asterisk_source_dir }}"
+    creates: /etc/init.d/asterisk
+
+- name: Install Asterisk logrotate config
+  ansible.builtin.command:
+    cmd: make install-logrotate
+    chdir: "{{ asterisk_source_dir }}"
+    creates: /etc/logrotate.d/asterisk
+
+- name: Run ldconfig
+  ansible.builtin.command:
+    cmd: ldconfig
+  changed_when: false
+
+- name: Ensure Asterisk service is enabled
+  ansible.builtin.service:
+    name: asterisk
+    enabled: true
+
+- name: Check installed Asterisk version
+  ansible.builtin.command:
+    cmd: asterisk -V
+  register: asterisk_version_check
+  changed_when: false
+
+- name: Show installed Asterisk version
+  ansible.builtin.debug:
+    var: asterisk_version_check.stdout

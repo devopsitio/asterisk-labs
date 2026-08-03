@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 <playbook.yml> [ansible-playbook args...]"
+  echo
+  echo "Example:"
+  echo "  $0 playbooks/lab01b-install-asterisk-source-ubuntu.yml --limit asterisk_lab_ubuntu_24 --diff"
+  exit 2
+fi
+
+playbook="$1"
+shift
+
+if [ ! -f "$playbook" ]; then
+  echo "ERROR: playbook not found: $playbook" >&2
+  exit 1
+fi
+
+mkdir -p logs
+
+timestamp="$(date +%Y%m%d-%H%M%S)"
+started_at="$(date '+%Y-%m-%d %H:%M:%S %z')"
+playbook_name="$(basename "$playbook" .yml)"
+
+git_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo no-git)"
+git_branch_safe="$(printf '%s' "$git_branch" | tr '/ :' '---')"
+
+git_commit="$(git rev-parse --short HEAD 2>/dev/null || echo no-git)"
+git_status="$(git status --short 2>/dev/null || true)"
+
+log_file="logs/${timestamp}_${playbook_name}_${git_branch_safe}_${git_commit}.log"
+
+cmd=(ansible-playbook "$playbook" "$@")
+
+{
+  echo "============================================================"
+  echo "Ansible playbook run"
+  echo "============================================================"
+  echo "Started at: $started_at"
+  echo "Working dir: $(pwd)"
+  echo "Log file: $log_file"
+  echo "Playbook: $playbook"
+  echo "Git branch: $git_branch"
+  echo "Git commit: $git_commit"
+  echo "Command: ${cmd[*]}"
+  echo
+  echo "Git status:"
+  if [ -n "$git_status" ]; then
+    echo "$git_status"
+  else
+    echo "clean"
+  fi
+  echo
+  echo "============================================================"
+  echo
+} > "$log_file"
+
+echo "Log: $log_file"
+echo "Playbook: $playbook"
+echo "Git branch: $git_branch"
+echo "Git commit: $git_commit"
+echo
+
+set +e
+ANSIBLE_LOG_PATH="$log_file" "${cmd[@]}"
+rc=$?
+set -e
+
+finished_at="$(date '+%Y-%m-%d %H:%M:%S %z')"
+
+{
+  echo
+  echo "============================================================"
+  echo "Finished at: $finished_at"
+  echo "Exit code: $rc"
+  echo "============================================================"
+} >> "$log_file"
+
+exit "$rc"

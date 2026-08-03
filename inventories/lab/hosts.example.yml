@@ -1,0 +1,25 @@
+all:
+  children:
+    asterisk:
+      hosts:
+        asterisk_lab_ubuntu:
+          ansible_host: 10.1.1.1
+          ansible_user: user
+          ansible_become: true
+          ansible_ssh_private_key_file: ~/.ssh/id_astrisk
+          asterisk_hostname: asterisk-ubuntu
+
+        asterisk_lab_ubuntu_24:
+          ansible_host: 10.1.2.1
+          ansible_user: user
+          ansible_become: true
+          ansible_ssh_private_key_file: ~/.ssh/id_astrisk
+          asterisk_hostname: asterisk-ubuntu-24
+
+        asterisk_lab_rocky:
+          ansible_host: 10.1.2.1
+          ansible_user: user
+          ansible_become: true
+          ansible_ssh_private_key_file: ~/.ssh/id_astrisk
+          ansible_os_family_hint: RedHat
+          asterisk_hostname: asterisk-rocky
