@@ -13,3 +13,9 @@
 
 - name: Configure users and permissions
   ansible.builtin.import_tasks: permissions.yml
+
+- name: Create minimal chan_sip config
+  ansible.builtin.import_tasks: chan_sip_config.yml
+
+- name: Configure Asterisk modules
+  ansible.builtin.import_tasks: modules_conf.yml

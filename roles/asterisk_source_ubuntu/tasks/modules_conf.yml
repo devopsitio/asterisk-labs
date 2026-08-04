@@ -1,0 +1,83 @@
+---
+- name: Check modules.conf exists
+  ansible.builtin.stat:
+    path: /etc/asterisk/modules.conf
+  register: asterisk_modules_conf
+
+- name: Fail if modules.conf is missing
+  ansible.builtin.fail:
+    msg: "/etc/asterisk/modules.conf not found"
+  when: not asterisk_modules_conf.stat.exists
+
+- name: Disable noload for res_hep.so
+  ansible.builtin.lineinfile:
+    path: /etc/asterisk/modules.conf
+    regexp: '^\s*noload\s*(=>|=)\s*res_hep\.so\s*(;.*)?$'
+    line: ';noload = res_hep.so ; disabled by Ansible, required for chan_sip'
+    backup: true
+  when: asterisk_enable_chan_sip | bool
+  notify: Restart asterisk
+
+- name: Remove old Ansible load res_hep line if duplicated
+  ansible.builtin.lineinfile:
+    path: /etc/asterisk/modules.conf
+    regexp: '^\s*load\s*=>\s*res_hep\.so\s*$'
+    state: absent
+    backup: true
+  when: asterisk_enable_chan_sip | bool
+
+- name: Remove old Ansible load chan_sip line if duplicated
+  ansible.builtin.lineinfile:
+    path: /etc/asterisk/modules.conf
+    regexp: '^\s*load\s*=>\s*chan_sip\.so\s*$'
+    state: absent
+    backup: true
+  when: asterisk_enable_chan_sip | bool
+
+- name: Ensure chan_sip required modules block exists
+  ansible.builtin.blockinfile:
+    path: /etc/asterisk/modules.conf
+    marker: "; {mark} ANSIBLE MANAGED chan_sip modules"
+    insertafter: EOF
+    block: |
+      load = res_hep.so
+      load = chan_sip.so
+    backup: true
+  when: asterisk_enable_chan_sip | bool
+  notify: Restart asterisk
+
+- name: Flush handlers before chan_sip verification
+  ansible.builtin.meta: flush_handlers
+
+- name: Check chan_sip module file exists
+  ansible.builtin.shell: |
+    set -e
+    find /usr/lib /usr/lib64 -path "*/asterisk/modules/chan_sip.so" -print -quit
+  register: chan_sip_module_file
+  changed_when: false
+  failed_when: chan_sip_module_file.stdout | length == 0
+  when: asterisk_enable_chan_sip | bool
+
+- name: Verify res_hep is loaded
+  ansible.builtin.command:
+    cmd: asterisk -rx "module show like res_hep"
+  register: res_hep_loaded
+  changed_when: false
+  when: asterisk_enable_chan_sip | bool
+
+- name: Verify chan_sip is loaded
+  ansible.builtin.command:
+    cmd: asterisk -rx "module show like chan_sip"
+  register: chan_sip_loaded
+  changed_when: false
+  failed_when:
+    - "'chan_sip.so' not in chan_sip_loaded.stdout or 'Not Running' in chan_sip_loaded.stdout"
+  when: asterisk_enable_chan_sip | bool
+
+- name: Verify chan_sip CLI commands are available
+  ansible.builtin.command:
+    cmd: asterisk -rx "sip show peers"
+  register: chan_sip_cli_check
+  changed_when: false
+  when: asterisk_enable_chan_sip | bool
+

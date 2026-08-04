@@ -25,3 +25,17 @@ asterisk_user: "asterisk"
 asterisk_group: "asterisk"
 
 asterisk_make_jobs: 4
+
+asterisk_use_saved_menuselect: true
+asterisk_menuselect_makeopts_file: "menuselect.makeopts"
+
+# chan_sip support for Asterisk 20+
+# Used only for lab compatibility with legacy SIP tasks.
+asterisk_enable_chan_sip: true
+asterisk_force_rebuild: false
+asterisk_chan_sip_reinclude_url: "https://raw.githubusercontent.com/InterLinked1/chan_sip/master/chan_sip_reinclude.sh"
+asterisk_chan_sip_reinclude_script: "{{ asterisk_source_dir }}/chan_sip_reinclude.sh"
+
+asterisk_chan_sip_create_minimal_sip_conf: true
+asterisk_chan_sip_bindaddr: "0.0.0.0"
+asterisk_chan_sip_bindport: 5160

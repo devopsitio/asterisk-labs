@@ -1,0 +1,41 @@
+---
+- name: Ensure Asterisk examples directory exists
+  ansible.builtin.file:
+    path: /etc/asterisk/examples
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: asterisk_enable_chan_sip | bool
+
+- name: Check current sip.conf exists
+  ansible.builtin.stat:
+    path: /etc/asterisk/sip.conf
+  register: chan_sip_current_conf
+  when: asterisk_enable_chan_sip | bool
+
+- name: Save original sip.conf as example
+  ansible.builtin.copy:
+    src: /etc/asterisk/sip.conf
+    dest: /etc/asterisk/examples/sip.conf.original
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+  when:
+    - asterisk_enable_chan_sip | bool
+    - chan_sip_current_conf.stat.exists
+
+- name: Deploy minimal sip.conf for chan_sip
+  ansible.builtin.template:
+    src: sip.conf.j2
+    dest: /etc/asterisk/sip.conf
+    owner: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    mode: "0640"
+    backup: true
+  when:
+    - asterisk_enable_chan_sip | bool
+    - asterisk_chan_sip_create_minimal_sip_conf | bool
+  notify: Restart asterisk

@@ -12,6 +12,30 @@
     remote_src: true
     creates: "{{ asterisk_source_dir }}/configure"
 
+- name: Download chan_sip reinclude script
+  ansible.builtin.get_url:
+    url: "{{ asterisk_chan_sip_reinclude_url }}"
+    dest: "{{ asterisk_chan_sip_reinclude_script }}"
+    mode: "0755"
+  when: asterisk_enable_chan_sip | bool
+
+- name: Reinclude chan_sip into Asterisk source tree
+  ansible.builtin.command:
+    cmd: "{{ asterisk_chan_sip_reinclude_script }}"
+    chdir: "{{ asterisk_source_dir }}"
+    creates: "{{ asterisk_source_dir }}/channels/chan_sip.c"
+  register: chan_sip_reinclude
+  when: asterisk_enable_chan_sip | bool
+
+- name: Reconfigure Asterisk after chan_sip was added
+  ansible.builtin.command:
+    cmd: ./configure --with-jansson-bundled --with-pjproject-bundled
+    chdir: "{{ asterisk_source_dir }}"
+  changed_when: true
+  when:
+    - asterisk_enable_chan_sip | bool
+    - chan_sip_reinclude is changed or asterisk_force_rebuild | bool
+
 - name: Download MP3 source for Asterisk
   ansible.builtin.command:
     cmd: contrib/scripts/get_mp3_source.sh
@@ -30,6 +54,15 @@
     chdir: "{{ asterisk_source_dir }}"
     creates: "{{ asterisk_source_dir }}/makeopts"
 
+- name: Deploy saved menuselect.makeopts
+  ansible.builtin.copy:
+    src: "{{ asterisk_menuselect_makeopts_file }}"
+    dest: "{{ asterisk_source_dir }}/menuselect.makeopts"
+    owner: root
+    group: root
+    mode: "0644"
+  when: asterisk_use_saved_menuselect | bool
+
 # make menuselect is interactive.
 # For automation we build with default menuselect options.
 # If you need custom modules, save menuselect.makeopts and copy it before make.
@@ -38,6 +71,15 @@
     cmd: "make -j{{ asterisk_make_jobs }}"
     chdir: "{{ asterisk_source_dir }}"
   changed_when: true
+
+- name: Rebuild Asterisk after chan_sip was added to source tree
+  ansible.builtin.command:
+    cmd: "make -j{{ asterisk_make_jobs }}"
+    chdir: "{{ asterisk_source_dir }}"
+  changed_when: true
+  when:
+    - asterisk_enable_chan_sip | bool
+    - chan_sip_reinclude is changed or asterisk_force_rebuild | bool
 
 - name: Install Asterisk
   ansible.builtin.command:
@@ -50,6 +92,15 @@
     cmd: make samples
     chdir: "{{ asterisk_source_dir }}"
     creates: /etc/asterisk/asterisk.conf
+
+- name: Reinstall Asterisk after chan_sip rebuild
+  ansible.builtin.command:
+    cmd: make install
+    chdir: "{{ asterisk_source_dir }}"
+  changed_when: true
+  when:
+    - asterisk_enable_chan_sip | bool
+    - chan_sip_reinclude is changed or asterisk_force_rebuild | bool
 
 - name: Install Asterisk systemd service
   ansible.builtin.command:

@@ -1,0 +1,13 @@
+; Managed by Ansible.
+; Minimal chan_sip config.
+; Full users/trunks config is added by a separate lab role.
+
+[general]
+context=default
+allowguest=no
+udpbindaddr={{ asterisk_chan_sip_bindaddr }}:{{ asterisk_chan_sip_bindport }}
+tcpenable=no
+transport=udp
+disallow=all
+allow=alaw
+allow=ulaw
