@@ -1,0 +1,13 @@
+; Managed by Ansible.
+; Minimal PJSIP config.
+; PJSIP listens on UDP {{ asterisk_pjsip_bindport }}.
+; chan_sip listens separately on UDP {{ asterisk_chan_sip_bindport }}.
+
+[global]
+type=global
+user_agent=Asterisk PBX
+
+[{{ asterisk_pjsip_transport_name }}]
+type=transport
+protocol=udp
+bind={{ asterisk_pjsip_bindaddr }}:{{ asterisk_pjsip_bindport }}

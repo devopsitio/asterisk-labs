@@ -1,0 +1,39 @@
+---
+- name: Ensure Asterisk examples directory exists
+  ansible.builtin.file:
+    path: /etc/asterisk/examples
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: asterisk_enable_pjsip | bool
+
+- name: Check current pjsip.conf exists
+  ansible.builtin.stat:
+    path: /etc/asterisk/pjsip.conf
+  register: pjsip_current_conf
+  when: asterisk_enable_pjsip | bool
+
+- name: Save original pjsip.conf as example
+  ansible.builtin.copy:
+    src: /etc/asterisk/pjsip.conf
+    dest: /etc/asterisk/examples/pjsip.conf.original
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+  when:
+    - asterisk_enable_pjsip | bool
+    - pjsip_current_conf.stat.exists
+
+- name: Deploy minimal pjsip.conf
+  ansible.builtin.template:
+    src: pjsip.conf.j2
+    dest: /etc/asterisk/pjsip.conf
+    owner: "{{ asterisk_user }}"
+    group: "{{ asterisk_group }}"
+    mode: "0640"
+    backup: true
+  when: asterisk_enable_pjsip | bool
+  notify: Restart asterisk

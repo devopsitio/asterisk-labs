@@ -1,0 +1,4 @@
+---
+asterisk_enable_chan_sip: true
+asterisk_chan_sip_bindaddr: "0.0.0.0"
+asterisk_chan_sip_bindport: 5160

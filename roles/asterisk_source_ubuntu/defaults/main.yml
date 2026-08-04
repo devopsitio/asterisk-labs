@@ -37,5 +37,15 @@ asterisk_chan_sip_reinclude_url: "https://raw.githubusercontent.com/InterLinked1
 asterisk_chan_sip_reinclude_script: "{{ asterisk_source_dir }}/chan_sip_reinclude.sh"
 
 asterisk_chan_sip_create_minimal_sip_conf: true
+
+# chan_sip base config
+asterisk_enable_chan_sip: true
 asterisk_chan_sip_bindaddr: "0.0.0.0"
 asterisk_chan_sip_bindport: 5160
+
+# PJSIP base config
+asterisk_enable_pjsip: true
+asterisk_pjsip_transport_name: "transport-udp"
+asterisk_pjsip_bindaddr: "0.0.0.0"
+asterisk_pjsip_bindport: 5060
+
